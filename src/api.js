@@ -35,3 +35,16 @@ export async function getCalendarEvents(email) {
 export async function savePushSubscription(userId, subscription) {
     return apiFetch('savePushSubscription', { userId, subscription });
 }
+
+
+export async function addTask(task) {
+        return apiFetch('addTask', { ...task, createdAt: new Date().toISOString() });
+}
+
+export async function getDetails() {
+        return apiFetch('getDetails');
+}
+
+                                             export async function saveDetails(details) {
+                                                     return apiFetch('saveDetails', { details });
+}
