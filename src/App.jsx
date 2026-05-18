@@ -33,7 +33,7 @@ function PasswordGate({ onAuth }) {
   };
   return (
     <div className="login-page">
-      <div style={{ fontSize: 64, marginBottom: 8 }}>🏠</div>
+      <div style={{ fontSize: 64, marginBottom: 8 }}>ð </div>
       <h1>Childress Family Ledger</h1>
       <p>Enter the family password to continue</p>
       <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -54,7 +54,7 @@ function IdentityPicker({ onPick }) {
   const users = getAvailableUsers();
   return (
     <div className="login-page">
-      <div style={{ fontSize: 48 }}>👤</div>
+      <div style={{ fontSize: 48 }}>ð¤</div>
       <h1>Who are you?</h1>
       <p>Choose your profile for this session</p>
       <div className="user-select">
@@ -72,15 +72,16 @@ function IdentityPicker({ onPick }) {
   );
 }
 
-// ── AI Suggest Tasks Modal ──────────────────────────────────────────────────
+// ââ AI Suggest Tasks Modal ââââââââââââââââââââââââââââââââââââââââââââââââââ
 function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
   const [messages, setMessages] = useState([
-    { role: 'model', text: "Hi! I'm your task assistant. Tell me about an area of life you'd like help managing — home maintenance, gardening, business, health, etc. — and I'll suggest specific tasks you can add!" }
+    { role: 'model', text: "Hi! I'm your task assistant. Tell me about an area of life you'd like help managing â home maintenance, gardening, business, health, etc. â and I'll suggest specific tasks you can add!" }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [selectedSuggestions, setSelectedSuggestions] = useState(new Set());
+  const [adjustments, setAdjustments] = useState({});
   const messagesEndRef = React.useRef(null);
 
   useEffect(() => {
@@ -105,13 +106,13 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
         ...history
       ];
       const reply = await callGemini(withSystem);
-      const jsonMatch = reply.match(/SUGGESTED_TASKS_JSON:([[sS]*])s*$/);
+      const jsonMatch = reply.match(/SUGGESTED_TASKS_JSON:(\[[\s\S]*\])\s*$/);
       let taskSuggestions = [];
       let displayReply = reply;
       if (jsonMatch) {
         try {
           taskSuggestions = JSON.parse(jsonMatch[1]);
-          displayReply = reply.replace(/SUGGESTED_TASKS_JSON:[sS]*$/, '').trim();
+          displayReply = reply.replace(/SUGGESTED_TASKS_JSON:[\s\S]*$/, '').trim();
           setSuggestions(taskSuggestions);
           setSelectedSuggestions(new Set(taskSuggestions.map((_, i) => i)));
         } catch(e) { console.warn('Could not parse task JSON', e); }
@@ -133,6 +134,21 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
       if (next.has(idx)) next.delete(idx); else next.add(idx);
       return next;
     });
+  };
+
+  const adjustTask = async (idx, text) => {
+    if (!text.trim()) return;
+    setAdjustments(prev => ({ ...prev, [idx]: { ...prev[idx], loading: true } }));
+    try {
+      const orig = suggestions[idx];
+      const msgs = [{ role: 'user', parts: [{ text: 'Task editor: return ONLY updated JSON for this task. Original: ' + JSON.stringify(orig) + ' Request: ' + text }] }];
+      const reply = await callGemini(msgs);
+      const updated = JSON.parse(reply.replace(/```json|```/g, '').trim());
+      setSuggestions(prev => prev.map((s, i) => i === idx ? { ...s, ...updated } : s));
+      setAdjustments(prev => ({ ...prev, [idx]: { open: false, text: '', loading: false } }));
+    } catch(e) {
+      setAdjustments(prev => ({ ...prev, [idx]: { ...prev[idx], loading: false } }));
+    }
   };
 
   const addSelected = () => {
@@ -157,10 +173,10 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
       <div style={{ background: 'var(--surface)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480, height: '85vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 17 }}>✨ AI Task Suggestions</h2>
+            <h2 style={{ margin: 0, fontSize: 17 }}>â¨ AI Task Suggestions</h2>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Describe what you need help with</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>â</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {messages.map((m, i) => (
@@ -188,16 +204,25 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
               return (
                 <div key={i} onClick={() => toggleSuggestion(i)} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 10px', borderRadius: 8, background: selectedSuggestions.has(i) ? 'rgba(99,102,241,0.12)' : 'transparent', border: '1px solid ' + (selectedSuggestions.has(i) ? 'var(--primary)' : 'var(--border)'), marginBottom: 6, cursor: 'pointer' }}>
                   <div style={{ width: 18, height: 18, borderRadius: 4, border: '2px solid ' + (selectedSuggestions.has(i) ? 'var(--primary)' : 'var(--text-muted)'), background: selectedSuggestions.has(i) ? 'var(--primary)' : 'transparent', flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 11 }}>
-                    {selectedSuggestions.has(i) ? '✓' : ''}
+                    {selectedSuggestions.has(i) ? 'â' : ''}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{s.title}</div>
                     {s.details && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{s.details}</div>}
                     <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                       {s.priority && <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: pc.bg, color: pc.fg }}>{s.priority}</span>}
-                      {s.frequency && s.frequency !== 'Once' && <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: 'rgba(99,102,241,0.15)', color: 'var(--primary)' }}>🔁 {s.frequency}</span>}
+                      {s.frequency && s.frequency !== 'Once' && <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: 'rgba(99,102,241,0.15)', color: 'var(--primary)' }}>ð {s.frequency}</span>}
                       {s.category && <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: 'rgba(120,120,120,0.15)', color: 'var(--text-muted)' }}>{s.category}</span>}
                     </div>
+                  {adjustments[i]?.open ? (
+                    <div style={{ marginTop: 6, display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                      <input className="input" style={{ flex: 1, fontSize: 12, padding: '4px 8px', height: 30 }} placeholder="e.g. make this weekly" value={adjustments[i]?.text || ''} onChange={e => setAdjustments(prev => ({ ...prev, [i]: { ...prev[i], text: e.target.value } }))} onKeyDown={e => e.key === 'Enter' && adjustTask(i, adjustments[i]?.text || '')} autoFocus />
+                      <button className="btn btn-primary btn-sm" style={{ height: 30, padding: '0 8px', fontSize: 11 }} onClick={() => adjustTask(i, adjustments[i]?.text || '')} disabled={adjustments[i]?.loading}>{adjustments[i]?.loading ? '...' : 'Apply'}</button>
+                      <button className="btn btn-secondary btn-sm" style={{ height: 30, padding: '0 6px' }} onClick={e => { e.stopPropagation(); setAdjustments(prev => ({ ...prev, [i]: { open: false, text: '' } })); }}>✕</button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-secondary btn-sm" style={{ marginTop: 6, fontSize: 11, padding: '2px 8px', height: 24 }} onClick={e => { e.stopPropagation(); setAdjustments(prev => ({ ...prev, [i]: { open: true, text: '' } })); }}>Adjust</button>
+                  )}
                   </div>
                 </div>
               );
@@ -206,14 +231,14 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
         )}
         <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0 }}>
           <textarea className="input" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Describe what you need help with..." rows={2} style={{ flex: 1, resize: 'none', fontSize: 14 }} disabled={loading} />
-          <button className="btn btn-primary" onClick={sendMessage} disabled={loading || !input.trim()} style={{ padding: '0 16px', alignSelf: 'flex-end', height: 40 }}>➤</button>
+          <button className="btn btn-primary" onClick={sendMessage} disabled={loading || !input.trim()} style={{ padding: '0 16px', alignSelf: 'flex-end', height: 40 }}>â¤</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Add Task Modal ─────────────────────────────────────────────────────────
+// ââ Add Task Modal âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function AddTaskModal({ currentUser, onClose, onAdd, onOpenSuggest }) {
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
@@ -242,9 +267,9 @@ function AddTaskModal({ currentUser, onClose, onAdd, onOpenSuggest }) {
   };
 
   const visOpts = [
-    { key: 'public', icon: '🌐', label: 'Public', desc: 'Anyone can see & complete' },
-    { key: 'personal', icon: '👁', label: 'Personal', desc: 'Anyone sees, only you complete' },
-    { key: 'private', icon: '🔒', label: 'Private', desc: 'Only you can see & complete' },
+    { key: 'public', icon: 'ð', label: 'Public', desc: 'Anyone can see & complete' },
+    { key: 'personal', icon: 'ð', label: 'Personal', desc: 'Anyone sees, only you complete' },
+    { key: 'private', icon: 'ð', label: 'Private', desc: 'Only you can see & complete' },
   ];
 
   return (
@@ -253,8 +278,8 @@ function AddTaskModal({ currentUser, onClose, onAdd, onOpenSuggest }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ fontSize: 18, margin: 0 }}>Add Task</h2>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {onOpenSuggest && <button onClick={onOpenSuggest} className="btn btn-secondary btn-sm" style={{ fontSize: 13 }}>✨ Suggest</button>}
-            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+            {onOpenSuggest && <button onClick={onOpenSuggest} className="btn btn-secondary btn-sm" style={{ fontSize: 13 }}>â¨ Suggest</button>}
+            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>â</button>
           </div>
         </div>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -312,13 +337,14 @@ function AddTaskModal({ currentUser, onClose, onAdd, onOpenSuggest }) {
   );
 }
 
-// ── Task Card ─────────────────────────────────────────────────────────────
+// ââ Task Card âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function TaskCard({ task, currentUser, onComplete, onSnooze }) {
   const isOverdue = task.deadline && new Date(task.deadline) < new Date() && !task.lastCompleted;
   const isAssignedToMe = task.assignedTo === currentUser?.name || task.assignedTo === 'All';
   const canComplete = task.visibility === 'public' || ((task.visibility === 'personal' || task.visibility === 'private') && isAssignedToMe);
   const getPriorityClass = (p) => { if (p === 'High') return 'badge-high'; if (p === 'Medium') return 'badge-medium'; return 'badge-low'; };
-  const visIcon = task.visibility === 'private' ? ' 🔒' : task.visibility === 'personal' ? ' 👁' : '';
+  const visIcon = task.visibility === 'private' ? ' ð' : task.visibility === 'personal' ? ' ð' : '';
+  const nextDue = (() => { if (task.recurrenceInterval > 0 && task.lastCompleted) { const d = new Date(task.lastCompleted); d.setDate(d.getDate() + Number(task.recurrenceInterval)); return d; } if (task.deadline) return new Date(task.deadline); return null; })();
   return (
     <div className={'task-card' + (isOverdue ? ' overdue' : '')}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
@@ -327,9 +353,10 @@ function TaskCard({ task, currentUser, onComplete, onSnooze }) {
           {task.details && <div className="task-details">{task.details}</div>}
           <div className="task-meta" style={{ marginTop: 8 }}>
             {task.priority && <span className={'badge ' + getPriorityClass(task.priority)}>{task.priority}</span>}
-            {task.frequency && task.frequency !== 'Once' && <span>🔁 {task.frequency}</span>}
-            {task.deadline && <span>📅 {new Date(task.deadline).toLocaleDateString()}</span>}
-            {task.assignedTo && <span>👤 {task.assignedTo}</span>}
+            {task.frequency && task.frequency !== 'Once' && <span>ð {task.frequency}</span>}
+                {nextDue && task.recurrenceInterval > 0 && <span>📅 Next: {nextDue.toLocaleDateString()}</span>}
+            {task.deadline && <span>ð {new Date(task.deadline).toLocaleDateString()}</span>}
+            {task.assignedTo && <span>ð¤ {task.assignedTo}</span>}
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
@@ -337,26 +364,29 @@ function TaskCard({ task, currentUser, onComplete, onSnooze }) {
           <button className="btn btn-secondary btn-sm" onClick={() => onSnooze(task.id, 24)}>Snooze</button>
         </div>
       </div>
-      {isOverdue && <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 6 }}>⚠ Overdue</div>}
+      {isOverdue && <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 6 }}>â  Overdue</div>}
     </div>
   );
 }
 
-// ── Tasks Tab ─────────────────────────────────────────────────────────────
+// ââ Tasks Tab âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function TasksTab({ tasks, currentUser, onComplete, onSnooze, syncing }) {
   const [filter, setFilter] = useState('mine');
   const filteredTasks = tasks.filter(t => {
+    // Always hide private tasks not assigned to current user
     if (t.visibility === 'private' && t.assignedTo !== currentUser?.name) return false;
     if (filter === 'mine') return t.assignedTo === currentUser?.name || t.assignedTo === 'All';
+    if (filter === 'created') return t.createdBy === currentUser?.name;
     if (filter === 'overdue') return t.deadline && new Date(t.deadline) < new Date() && !t.lastCompleted;
-    return true;
+    return true; // 'all' - private already filtered above
   });
+  const filterLabels = { mine: 'My Tasks', all: 'All Tasks', created: 'Created by Me', overdue: 'Overdue' };
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, padding: '12px 16px', overflowX: 'auto' }}>
-        {['mine', 'all', 'overdue'].map(f => (
-          <button key={f} className={'btn btn-sm ' + (filter === f ? 'btn-primary' : 'btn-secondary')} onClick={() => setFilter(f)}>
-            {f === 'mine' ? 'My Tasks' : f === 'all' ? 'All Tasks' : 'Overdue'}
+        {['mine', 'all', 'created', 'overdue'].map(f => (
+          <button key={f} className={'btn btn-sm ' + (filter === f ? 'btn-primary' : 'btn-secondary')} onClick={() => setFilter(f)} style={{ whiteSpace: 'nowrap' }}>
+            {filterLabels[f]}
           </button>
         ))}
       </div>
@@ -368,7 +398,7 @@ function TasksTab({ tasks, currentUser, onComplete, onSnooze, syncing }) {
   );
 }
 
-// ── Calendar Tab ──────────────────────────────────────────────────────────
+// ââ Calendar Tab ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function CalendarTab({ currentUser }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -386,14 +416,14 @@ function CalendarTab({ currentUser }) {
         <button className="btn btn-secondary btn-sm" onClick={openGoogleCalendar}>Open Calendar</button>
       </div>
       {loading ? (<div className="sync-indicator" style={{ padding: 24, justifyContent: 'center' }}><div className="spinner"/><span>Loading calendar...</span></div>)
-      : error ? (<div className="empty-state"><div className="icon">📅</div><h3>Calendar not connected</h3><button className="btn btn-secondary" onClick={openGoogleCalendar}>Open Google Calendar</button></div>)
-      : events.length === 0 ? (<div className="empty-state"><div className="icon">🎉</div><h3>Nothing scheduled today!</h3><p>Enjoy your free day</p></div>)
-      : (<div>{events.map((ev, i) => (<div key={i} className="task-card"><div className="task-title">{ev.summary}</div><div className="task-meta">{ev.start && <span>🕐 {new Date(ev.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}</div></div>))}</div>)}
+      : error ? (<div className="empty-state"><div className="icon">ð</div><h3>Calendar not connected</h3><button className="btn btn-secondary" onClick={openGoogleCalendar}>Open Google Calendar</button></div>)
+      : events.length === 0 ? (<div className="empty-state"><div className="icon">ð</div><h3>Nothing scheduled today!</h3><p>Enjoy your free day</p></div>)
+      : (<div>{events.map((ev, i) => (<div key={i} className="task-card"><div className="task-title">{ev.summary}</div><div className="task-meta">{ev.start && <span>ð {new Date(ev.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}</div></div>))}</div>)}
     </div>
   );
 }
 
-// ── Details Tab ───────────────────────────────────────────────────────────
+// ââ Details Tab âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const DETAILS_KEY = 'fl_details_v2';
 function loadDetails() { try { return JSON.parse(localStorage.getItem(DETAILS_KEY) || '[]'); } catch { return []; } }
 function saveDetailsLocal(tabs) { localStorage.setItem(DETAILS_KEY, JSON.stringify(tabs)); }
@@ -434,7 +464,7 @@ function DetailsTab() {
         </div>
       )}
       {tabs.length === 0 ? (
-        <div className="empty-state"><div className="icon">📋</div><h3>No details yet</h3><p>Add a tab to get started</p></div>
+        <div className="empty-state"><div className="icon">ð</div><h3>No details yet</h3><p>Add a tab to get started</p></div>
       ) : (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 16, gap: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -457,7 +487,7 @@ function DetailsTab() {
   );
 }
 
-// ── Settings Tab ──────────────────────────────────────────────────────────
+// ââ Settings Tab ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function SettingsTab({ currentUser, onLogout }) {
   const [pushEnabled, setPushEnabled] = useState(isPushEnabled());
   const handlePushToggle = async () => {
@@ -471,7 +501,7 @@ function SettingsTab({ currentUser, onLogout }) {
         <div className="task-title" style={{ marginBottom: 4 }}>Push Notifications</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>Get notified about task reminders</div>
         <button className={'btn btn-sm ' + (pushEnabled ? 'btn-secondary' : 'btn-primary')} onClick={handlePushToggle}>
-          {pushEnabled ? '🔔 Enabled — Tap to disable' : '🔕 Enable Notifications'}
+          {pushEnabled ? 'ð Enabled â Tap to disable' : 'ð Enable Notifications'}
         </button>
       </div>
       <div className="task-card">
@@ -483,7 +513,7 @@ function SettingsTab({ currentUser, onLogout }) {
   );
 }
 
-// ── Main App ──────────────────────────────────────────────────────────────
+// ââ Main App ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 export default function App() {
   const [authed, setAuthed] = useState(() => checkAuth());
   const [identity, setIdentityState] = useState(() => getIdentity());
@@ -557,10 +587,10 @@ export default function App() {
   if (!identity) return <IdentityPicker onPick={(u) => { setIdentity(u); setIdentityState(u); }} />;
 
   const tabs = [
-    { id: 'tasks', label: 'Tasks', icon: '✅' },
-    { id: 'calendar', label: 'Today', icon: '📅' },
-    { id: 'details', label: 'Details', icon: '📋' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' }
+    { id: 'tasks', label: 'Tasks', icon: 'â' },
+    { id: 'calendar', label: 'Today', icon: 'ð' },
+    { id: 'details', label: 'Details', icon: 'ð' },
+    { id: 'settings', label: 'Settings', icon: 'âï¸' }
   ];
 
   return (
