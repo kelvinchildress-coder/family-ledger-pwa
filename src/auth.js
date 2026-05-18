@@ -4,4 +4,4 @@ export function login(p,r=false){if(p===P){r?localStorage.setItem(AK,'true'):ses
 export function logout(){[AK,IK].forEach(k=>{sessionStorage.removeItem(k);localStorage.removeItem(k)})}
 export const getIdentity=()=>JSON.parse(localStorage.getItem(IK)||'null');
 export const setIdentity=u=>localStorage.setItem(IK,JSON.stringify(u));
-export const getAvailableUsers=()=>[{name:'Andie',email:'enrique.childress.18@gmail.com',color:'#e91e63',emoji:'🌸'},{name:'Noa',email:'kelvinchildress13@gmail.com',color:'#2196f3',emoji:'🌊'},{name:'Parent',email:'thechildress88@gmail.com',color:'#4caf50',emoji:'🏠'}]
+export const getAvailableUsers=()=>[{name:'Enrique',email:'enrique.childress.18@gmail.com',color:'#e91e63',emoji:'E'},{name:'Kelvin',email:'kelvinchildress13@gmail.com',color:'#2196f3',emoji:'K'}]
