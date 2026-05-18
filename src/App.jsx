@@ -6,7 +6,7 @@ import { getCachedTasks, setCachedTasks, addToSyncQueue, getSyncQueue, clearSync
 
 
 // Family member flags & origins (Enrique=Malta, Kelvin=Nebraska, Andie=Wyoming, Noa=Texas)
-const USER_FLAGS = { Kelvin: '🌾', Enrique: '🇲🇹', Andie: '🦅', Noa: '⭐' };
+const USER_FLAGS = { Kelvin: 'N', Enrique: '🇲🇹', Andie: '🏐', Noa: '⚽' };
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY || '';
 
@@ -39,7 +39,7 @@ function PasswordGate({ onAuth }) {
     <div className="login-page">
       <div style={{ fontSize: 56, marginBottom: 4 }}>🌍</div>
       <h1 style={{ color: 'var(--primary)' }}>Childress Family Ledger</h1>
-      <div style={{ fontSize: 20, display: 'flex', gap: 8, justifyContent: 'center' }}>🇲🇹 🌾 🦅 ⭐</div>
+      <div style={{ fontSize: 20, display: 'flex', gap: 8, justifyContent: 'center' }}>🇲🇹 N 🏐 ⚽</div>
       <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: -4 }}>Malta · Nebraska · Wyoming · Texas</p>
       <p>Enter the family password to continue</p>
       <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -412,8 +412,16 @@ function CalendarTab({ currentUser }) {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const openGoogleCalendar = () => window.open('https://calendar.google.com', '_blank');
   useEffect(() => {
+    const cacheKey = 'cal_events_' + (currentUser?.name || 'unknown');
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) { try { setEvents(JSON.parse(cached)); setLoading(false); } catch(e) {} }
     if (!currentUser?.email) { setLoading(false); return; }
-    getCalendarEvents(currentUser.email).then(data => { setEvents(data.events || []); setLoading(false); }).catch(() => { setError(true); setLoading(false); });
+    getCalendarEvents(currentUser.email).then(data => {
+      const evts = data.events || [];
+      setEvents(evts);
+      localStorage.setItem(cacheKey, JSON.stringify(evts));
+      setLoading(false);
+    }).catch(() => { if (!cached) setError(true); setLoading(false); });
   }, [currentUser]);
   return (
     <div>
@@ -530,6 +538,7 @@ export default function App() {
   const [showAddTask, setShowAddTask] = useState(false);
   const [showSuggest, setShowSuggest] = useState(false);
   const [showScan, setShowScan] = useState(false);
+  const [snoozeMsg, setSnoozeMsg] = useState(null);
 
   const syncTasks = useCallback(async () => {
     if (syncing) return;
@@ -571,8 +580,17 @@ export default function App() {
   };
 
   const handleSnooze = async (taskId, hours) => {
-    try { await snoozeTask(taskId, hours); }
-    catch (e) { addToSyncQueue({ type: 'snooze', taskId, hours }); }
+    try {
+      await snoozeTask(taskId, hours);
+      const msg = 'Task snoozed for ' + hours + ' hour' + (hours > 1 ? 's' : '') + ' ⏰';
+      setSnoozeMsg(msg);
+      setTimeout(() => setSnoozeMsg(null), 3000);
+    }
+    catch (e) {
+      addToSyncQueue({ type: 'snooze', taskId, hours });
+      setSnoozeMsg('Snooze queued for sync ⏰');
+      setTimeout(() => setSnoozeMsg(null), 3000);
+    }
   };
 
   const handleAddTask = (task) => {
@@ -632,6 +650,9 @@ export default function App() {
       )}
       {showScan && (
 <ScanInboxModal currentUser={identity} onClose={() => setShowScan(false)} onAddTasks={handleAddMultipleTasks} />
+      {snoozeMsg && (
+        <div style={{position:'fixed', bottom:'80px', left:'50%', transform:'translateX(-50%)', background:'#1e2d4a', border:'1px solid #e8a838', color:'#f0ece2', padding:'10px 20px', borderRadius:'20px', zIndex:9999, fontSize:'14px', boxShadow:'0 4px 12px rgba(0,0,0,0.3)'}}>{snoozeMsg}</div>
+      )}
 )}
 {showSuggest && (
         <SuggestTasksModal currentUser={identity} onClose={() => setShowSuggest(false)} onAddTasks={handleAddMultipleTasks} />
