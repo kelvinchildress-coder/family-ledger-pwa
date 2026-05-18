@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { checkAuth, login, logout, getIdentity, setIdentity, getAvailableUsers } from './auth';
 import { requestPushPermission, isPushEnabled, sendPushSubscriptionToServer, showLocalNotification } from './push';
-import { getTasks, updateTask, completeTask, snoozeTask, getCalendarEvents, savePushSubscription, addTask } from './api';
+import { getTasks, updateTask, completeTask, snoozeTask, getCalendarEvents, savePushSubscription, addTask, submitTaskFeedback, saveRecurringSchedule, getSuggestedTasks } from './api';
 import { getCachedTasks, setCachedTasks, addToSyncQueue, getSyncQueue, clearSyncQueue, getPref, setPref } from './storage';
 
 function PasswordGate({ onAuth }) {
