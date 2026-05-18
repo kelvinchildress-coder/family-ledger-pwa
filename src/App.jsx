@@ -4,6 +4,10 @@ import { requestPushPermission, isPushEnabled, sendPushSubscriptionToServer, sho
 import { getTasks, updateTask, completeTask, snoozeTask, getCalendarEvents, savePushSubscription, addTask } from './api';
 import { getCachedTasks, setCachedTasks, addToSyncQueue, getSyncQueue, clearSyncQueue, getPref, setPref } from './storage';
 
+
+// Family member flags & origins (Enrique=Malta, Kelvin=Nebraska, Andie=Wyoming, Noa=Texas)
+const USER_FLAGS = { Kelvin: '🌾', Enrique: '🇲🇹', Andie: '🦅', Noa: '⭐' };
+
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY || '';
 
 async function callGemini(messages) {
@@ -33,8 +37,10 @@ function PasswordGate({ onAuth }) {
   };
   return (
     <div className="login-page">
-      <div style={{ fontSize: 64, marginBottom: 8 }}>ð </div>
-      <h1>Childress Family Ledger</h1>
+      <div style={{ fontSize: 56, marginBottom: 4 }}>🌍</div>
+      <h1 style={{ color: 'var(--primary)' }}>Childress Family Ledger</h1>
+      <div style={{ fontSize: 20, display: 'flex', gap: 8, justifyContent: 'center' }}>🇲🇹 🌾 🦅 ⭐</div>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: -4 }}>Malta · Nebraska · Wyoming · Texas</p>
       <p>Enter the family password to continue</p>
       <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <input className="input" type="password" placeholder="Family password" value={password} onChange={e => setPassword(e.target.value)} autoFocus />
@@ -54,7 +60,7 @@ function IdentityPicker({ onPick }) {
   const users = getAvailableUsers();
   return (
     <div className="login-page">
-      <div style={{ fontSize: 48 }}>ð¤</div>
+      <div style={{ fontSize: 48 }}>👪</div>
       <h1>Who are you?</h1>
       <p>Choose your profile for this session</p>
       <div className="user-select">
@@ -523,6 +529,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('tasks');
   const [showAddTask, setShowAddTask] = useState(false);
   const [showSuggest, setShowSuggest] = useState(false);
+  const [showScan, setShowScan] = useState(false);
 
   const syncTasks = useCallback(async () => {
     if (syncing) return;
@@ -596,14 +603,18 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <div>
-          <h1>Family Ledger</h1>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            {identity.emoji} {identity.name} {lastSync ? 'synced ' + lastSync.toLocaleTimeString() : ''}
+        <div className="header-logo">
+          <span style={{ fontSize: 26, lineHeight: 1, marginRight: 8 }}>🌎</span>
+          <div>
+            <h1>Family Ledger</h1>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', gap: 4, alignItems: 'center' }}>
+              {identity.emoji} {identity.name} {USER_FLAGS[identity.name] || ''} {lastSync ? '· synced ' + lastSync.toLocaleTimeString() : ''}
+            </div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {syncing && <div className="spinner"/>}
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowScan(true)} style={{ fontSize: 12 }}>📧 Scan</button>
           <button className="btn btn-secondary btn-sm" onClick={syncTasks} disabled={syncing}>Sync</button>
         </div>
       </header>
@@ -619,7 +630,10 @@ export default function App() {
       {showAddTask && (
         <AddTaskModal currentUser={identity} onClose={() => setShowAddTask(false)} onAdd={handleAddTask} onOpenSuggest={() => { setShowAddTask(false); setShowSuggest(true); }} />
       )}
-      {showSuggest && (
+      {showScan && (
+<ScanInboxModal currentUser={identity} onClose={() => setShowScan(false)} onAddTasks={handleAddMultipleTasks} />
+)}
+{showSuggest && (
         <SuggestTasksModal currentUser={identity} onClose={() => setShowSuggest(false)} onAddTasks={handleAddMultipleTasks} />
       )}
       <nav className="tab-bar">
@@ -631,4 +645,117 @@ export default function App() {
       </nav>
     </div>
   );
+}// ── Scan Inbox Modal ──────────────────────────────────────────────────
+function ScanInboxModal({ currentUser, onClose, onAddTasks }) {
+  const [scanning, setScanning] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [selected, setSelected] = useState(new Set());
+  const [error, setError] = useState('');
+  const [scanned, setScanned] = useState(false);
+  const BASE = import.meta.env.VITE_BACKEND_URL || '';
+
+  const runScan = async () => {
+    setScanning(true); setError('');
+    try {
+      const res = await fetch(BASE + '?action=scanInboxForTasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser?.email || '' })
+      });
+      const data = await res.json();
+      if (data.ok && data.tasks?.length > 0) {
+        setSuggestions(data.tasks);
+        setSelected(new Set(data.tasks.map((_, i) => i)));
+      } else if (data.ok) {
+        setError('No actionable tasks found in recent emails or calendar.');
+      } else {
+        setError(data.error || 'Scan failed. Ensure Gmail/Calendar permissions are granted in Apps Script.');
+      }
+    } catch(e) { setError('Could not connect: ' + e.message); }
+    setScanning(false); setScanned(true);
+  };
+
+  const toggleItem = (idx) => setSelected(prev => { const n = new Set(prev); n.has(idx) ? n.delete(idx) : n.add(idx); return n; });
+
+  const addChosen = () => {
+    onAddTasks(suggestions.filter((_, i) => selected.has(i)).map((s, i) => ({
+      id: 'task_scan_' + Date.now() + '_' + i,
+      title: s.title, details: s.details || '',
+      assignedTo: currentUser?.name || 'All', priority: s.priority || 'Medium',
+      frequency: 'Once', recurrenceInterval: 0,
+      category: s.category || 'General', deadline: s.deadline || null,
+      visibility: 'public', createdBy: currentUser?.name || 'Unknown',
+    })));
+    onClose();
+  };
+
+  const pc = (p) => p === 'High' ? ['rgba(224,92,92,0.2)','#e05c5c'] : p === 'Medium' ? ['rgba(240,192,64,0.2)','#f0c040'] : ['rgba(77,186,127,0.2)','#4dba7f'];
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1100 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--surface)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 17 }}>📧 Scan Inbox & Calendar</h2>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>AI finds tasks hiding in your emails & events</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+          {!scanned ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', paddingTop: 12 }}>
+              <div style={{ fontSize: 48 }}>📬</div>
+              <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.6 }}>
+                Will scan <strong style={{ color: 'var(--text)' }}>{currentUser?.email || 'your inbox'}</strong>'s last 20 unread emails and this week's calendar events for actionable tasks.
+              </p>
+              <div style={{ background: 'var(--card)', borderRadius: 10, padding: 12, width: '100%', fontSize: 12, color: 'var(--text-muted)', border: '1px solid var(--border)', lineHeight: 1.7 }}>
+                <div>📧 <strong>Emails</strong>: subject lines + first 200 chars of recent unread</div>
+                <div>📅 <strong>Calendar</strong>: upcoming events this week</div>
+                <div>🤖 <strong>AI</strong>: extracts anything that sounds like a to-do</div>
+              </div>
+              <button className="btn btn-primary" onClick={runScan} disabled={scanning} style={{ width: '100%', padding: 14, fontSize: 15 }}>
+                {scanning ? '🔍 Scanning...' : '🔍 Scan Now'}
+              </button>
+              {scanning && <div className="sync-indicator" style={{ justifyContent: 'center' }}><div className="spinner"/><span>Reading emails & calendar via Apps Script...</span></div>}
+            </div>
+          ) : error ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', paddingTop: 24 }}>
+              <div style={{ fontSize: 36 }}>⚠️</div>
+              <p style={{ color: 'var(--danger)', textAlign: 'center', fontSize: 14 }}>{error}</p>
+              <button className="btn btn-secondary" onClick={() => { setScanned(false); setError(''); }}>Try Again</button>
+            </div>
+          ) : suggestions.length === 0 ? (
+            <div className="empty-state"><div className="icon">✅</div><h3>All clear!</h3><p>No pending tasks found in inbox</p></div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>FOUND {suggestions.length} POTENTIAL TASKS</div>
+                <button className="btn btn-primary btn-sm" onClick={addChosen} disabled={selected.size === 0}>Add {selected.size}</button>
+              </div>
+              {suggestions.map((s, i) => {
+                const [bg, fg] = pc(s.priority);
+                const sel = selected.has(i);
+                return (
+                  <div key={i} onClick={() => toggleItem(i)} style={{ display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 10, background: sel ? 'rgba(232,168,56,0.08)' : 'var(--card)', border: '1px solid ' + (sel ? 'var(--primary)' : 'var(--border)'), marginBottom: 8, cursor: 'pointer' }}>
+                    <div style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (sel ? 'var(--primary)' : 'var(--text-muted)'), background: sel ? 'var(--primary)' : 'transparent', flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: sel ? '#1c1a2e' : 'transparent', fontSize: 12, fontWeight: 700 }}>✓</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{s.title}</div>
+                      {s.details && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{s.details}</div>}
+                      <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                        {s.source && <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, background: 'rgba(100,100,200,0.15)', color: 'var(--text-muted)' }}>{s.source === 'email' ? '📧 Email' : '📅 Calendar'}</span>}
+                        {s.priority && <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: bg, color: fg }}>{s.priority}</span>}
+                        {s.deadline && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Due: {new Date(s.deadline).toLocaleDateString()}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
+
+
