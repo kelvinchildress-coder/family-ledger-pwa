@@ -648,11 +648,11 @@ export default function App() {
       {showAddTask && (
         <AddTaskModal currentUser={identity} onClose={() => setShowAddTask(false)} onAdd={handleAddTask} onOpenSuggest={() => { setShowAddTask(false); setShowSuggest(true); }} />
       )}
-      {showScan && (
-<ScanInboxModal currentUser={identity} onClose={() => setShowScan(false)} onAddTasks={handleAddMultipleTasks} />
       {snoozeMsg && (
         <div style={{position:'fixed', bottom:'80px', left:'50%', transform:'translateX(-50%)', background:'#1e2d4a', border:'1px solid #e8a838', color:'#f0ece2', padding:'10px 20px', borderRadius:'20px', zIndex:9999, fontSize:'14px', boxShadow:'0 4px 12px rgba(0,0,0,0.3)'}}>{snoozeMsg}</div>
       )}
+      {showScan && (
+<ScanInboxModal currentUser={identity} onClose={() => setShowScan(false)} onAddTasks={handleAddMultipleTasks} />
 )}
 {showSuggest && (
         <SuggestTasksModal currentUser={identity} onClose={() => setShowSuggest(false)} onAddTasks={handleAddMultipleTasks} />
