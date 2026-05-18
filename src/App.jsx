@@ -172,7 +172,7 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
     onClose();
   };
 
-  const prioColor = (p) => p === 'High' ? { bg: 'rgba(239,68,68,0.2)', fg: '#ef4444' } : p === 'Medium' ? { bg: 'rgba(245,158,11,0.2)', fg: '#f59e0b' } : { bg: 'rgba(34,197,94,0.2)', fg: '#22c55e' };
+  const prioColor = (p) => p === 'High' ? { bg: 'rgba(192,57,43,0.12)', fg: '#c0392b' } : p === 'Medium' ? { bg: 'rgba(230,126,34,0.12)', fg: '#e67e22' } : { bg: 'rgba(39,174,96,0.12)', fg: '#27ae60' };
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1100 }} onClick={e => e.target === e.currentTarget && onClose()}>
@@ -187,14 +187,14 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {messages.map((m, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-              <div style={{ maxWidth: '85%', padding: '10px 14px', borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', background: m.role === 'user' ? 'var(--primary)' : 'var(--surface-2, #1e1e2e)', color: m.role === 'user' ? 'white' : 'var(--text)', fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+              <div style={{ maxWidth: '85%', padding: '10px 14px', borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', background: m.role === 'user' ? 'var(--primary)' : 'var(--surface)', color: m.role === 'user' ? 'white' : 'var(--text)', fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                 {m.text}
               </div>
             </div>
           ))}
           {loading && (
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <div style={{ padding: '10px 14px', borderRadius: '14px 14px 14px 4px', background: 'var(--surface-2, #1e1e2e)', color: 'var(--text-muted)', fontSize: 14 }}>Thinking...</div>
+              <div style={{ padding: '10px 14px', borderRadius: '14px 14px 14px 4px', background: 'var(--surface)', color: 'var(--text-muted)', fontSize: 14 }}>Thinking...</div>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -632,7 +632,7 @@ export default function App() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {syncing && <div className="spinner"/>}
-          <button className="btn btn-secondary btn-sm" onClick={() => setShowScan(true)} style={{ fontSize: 12 }}>📧 Scan</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowScan(true)} style={{ fontSize: 12 }}>🔍 Scan</button>
           <button className="btn btn-secondary btn-sm" onClick={syncTasks} disabled={syncing}>Sync</button>
         </div>
       </header>
@@ -649,7 +649,7 @@ export default function App() {
         <AddTaskModal currentUser={identity} onClose={() => setShowAddTask(false)} onAdd={handleAddTask} onOpenSuggest={() => { setShowAddTask(false); setShowSuggest(true); }} />
       )}
       {snoozeMsg && (
-        <div style={{position:'fixed', bottom:'80px', left:'50%', transform:'translateX(-50%)', background:'#1e2d4a', border:'1px solid #e8a838', color:'#f0ece2', padding:'10px 20px', borderRadius:'20px', zIndex:9999, fontSize:'14px', boxShadow:'0 4px 12px rgba(0,0,0,0.3)'}}>{snoozeMsg}</div>
+        <div style={{position:'fixed', bottom:'80px', left:'50%', transform:'translateX(-50%)', background:'#4a7c59', border:'1px solid #27ae60', color:'#ffffff', padding:'10px 20px', borderRadius:'20px', zIndex:9999, fontSize:'14px', boxShadow:'0 4px 12px rgba(0,0,0,0.3)'}}>{snoozeMsg}</div>
       )}
       {showScan && (
 <ScanInboxModal currentUser={identity} onClose={() => setShowScan(false)} onAddTasks={handleAddMultipleTasks} />
@@ -710,14 +710,14 @@ function ScanInboxModal({ currentUser, onClose, onAddTasks }) {
     onClose();
   };
 
-  const pc = (p) => p === 'High' ? ['rgba(224,92,92,0.2)','#e05c5c'] : p === 'Medium' ? ['rgba(240,192,64,0.2)','#f0c040'] : ['rgba(77,186,127,0.2)','#4dba7f'];
+  const pc = (p) => p === 'High' ? ['rgba(192,57,43,0.12)','#c0392b'] : p === 'Medium' ? ['rgba(230,126,34,0.12)','#e67e22'] : ['rgba(39,174,96,0.12)','#27ae60'];
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1100 }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ background: 'var(--surface)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 17 }}>📧 Scan Inbox & Calendar</h2>
+            <h2 style={{ margin: 0, fontSize: 17 }}>🔍 Scan Inbox & Calendar</h2>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>AI finds tasks hiding in your emails & events</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
@@ -758,7 +758,7 @@ function ScanInboxModal({ currentUser, onClose, onAddTasks }) {
                 const sel = selected.has(i);
                 return (
                   <div key={i} onClick={() => toggleItem(i)} style={{ display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 10, background: sel ? 'rgba(232,168,56,0.08)' : 'var(--card)', border: '1px solid ' + (sel ? 'var(--primary)' : 'var(--border)'), marginBottom: 8, cursor: 'pointer' }}>
-                    <div style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (sel ? 'var(--primary)' : 'var(--text-muted)'), background: sel ? 'var(--primary)' : 'transparent', flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: sel ? '#1c1a2e' : 'transparent', fontSize: 12, fontWeight: 700 }}>✓</div>
+                    <div style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (sel ? 'var(--primary)' : 'var(--text-muted)'), background: sel ? 'var(--primary)' : 'transparent', flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: sel ? '#4a7c59' : 'transparent', fontSize: 12, fontWeight: 700 }}>✓</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{s.title}</div>
                       {s.details && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{s.details}</div>}
