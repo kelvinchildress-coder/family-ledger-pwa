@@ -11,74 +11,17 @@ const USER_FLAGS = { Kelvin: 'N', Enrique: '🇲🇹', Andie: '🏐', Noa: '⚽'
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY || '';
 
 async function callGemini(messages) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: messages,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1500 }
-      })
-    }
-  );
-  if (!res.ok) throw new Error('Gemini API error: ' + res.status);
+  // Route through Apps Script backend to avoid exposing API key and browser quota limits
+  const res = await fetch(BASE + '?action=chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'chat', messages })
+  });
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!data.ok) throw new Error(data.error || 'Backend chat error');
+  return data.reply;
 }
 
-function PasswordGate({ onAuth }) {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [remember, setRemember] = useState(false);
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (login(password, remember)) { onAuth(); } else { setError('Incorrect password'); setTimeout(() => setError(''), 2000); }
-  };
-  return (
-    <div className="login-page">
-      <div style={{ fontSize: 56, marginBottom: 4 }}>🌍</div>
-      <h1 style={{ color: 'var(--primary)' }}>Childress Family Ledger</h1>
-      <div style={{ fontSize: 20, display: 'flex', gap: 8, justifyContent: 'center' }}>🇲🇹 N 🏐 ⚽</div>
-      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: -4 }}>Malta · Nebraska · Wyoming · Texas</p>
-      <p>Enter the family password to continue</p>
-      <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <input className="input" type="password" placeholder="Family password" value={password} onChange={e => setPassword(e.target.value)} autoFocus />
-        {error && <p style={{ color: 'var(--danger)', textAlign: 'center', fontSize: 13 }}>{error}</p>}
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
-          <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} />
-          Remember me on this device
-        </label>
-        <button className="btn btn-primary" type="submit" style={{ width: '100%' }}>Enter</button>
-      </form>
-    </div>
-  );
-}
-
-function IdentityPicker({ onPick }) {
-  const [selected, setSelected] = useState(null);
-  const users = getAvailableUsers();
-  return (
-    <div className="login-page">
-      <div style={{ fontSize: 48 }}>👪</div>
-      <h1>Who are you?</h1>
-      <p>Choose your profile for this session</p>
-      <div className="user-select">
-        {users.map(u => (
-          <button key={u.name} className={'user-card' + (selected?.name === u.name ? ' selected' : '')} onClick={() => setSelected(u)}>
-            <span className="user-avatar">{u.emoji}</span>
-            <span className="user-name">{u.name}</span>
-          </button>
-        ))}
-      </div>
-      <button className="btn btn-primary" disabled={!selected} style={{ width: '100%' }} onClick={() => onPick(selected)}>
-        Continue as {selected?.name || '...'}
-      </button>
-    </div>
-  );
-}
-
-// ââ AI Suggest Tasks Modal ââââââââââââââââââââââââââââââââââââââââââââââââââ
 function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
   const [messages, setMessages] = useState([
     { role: 'model', text: "Hi! I'm your task assistant. Tell me about an area of life you'd like help managing — home maintenance, gardening, business, health, etc. — and I'll suggest specific tasks you can add!" }
