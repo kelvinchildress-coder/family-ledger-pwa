@@ -81,7 +81,7 @@ function IdentityPicker({ onPick }) {
 // ââ AI Suggest Tasks Modal ââââââââââââââââââââââââââââââââââââââââââââââââââ
 function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
   const [messages, setMessages] = useState([
-    { role: 'model', text: "Hi! I'm your task assistant. Tell me about an area of life you'd like help managing â home maintenance, gardening, business, health, etc. â and I'll suggest specific tasks you can add!" }
+    { role: 'model', text: "Hi! I'm your task assistant. Tell me about an area of life you'd like help managing — home maintenance, gardening, business, health, etc. — and I'll suggest specific tasks you can add!" }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -515,7 +515,7 @@ function SettingsTab({ currentUser, onLogout }) {
         <div className="task-title" style={{ marginBottom: 4 }}>Push Notifications</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>Get notified about task reminders</div>
         <button className={'btn btn-sm ' + (pushEnabled ? 'btn-secondary' : 'btn-primary')} onClick={handlePushToggle}>
-          {pushEnabled ? '🔔 Enabled â Tap to disable' : '🔕 Enable Notifications'}
+          {pushEnabled ? '🔔 Enabled — Tap to disable' : '🔕 Enable Notifications'}
         </button>
       </div>
       <div className="task-card">
