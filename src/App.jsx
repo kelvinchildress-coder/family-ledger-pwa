@@ -200,7 +200,7 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
           <div ref={messagesEndRef} />
         </div>
         {suggestions.length > 0 && (
-          <div style={{ maxHeight: 230, overflowY: 'auto', borderTop: '1px solid var(--border)', padding: '10px 14px', flexShrink: 0, background: 'var(--surface-2, #1a1a2e)' }}>
+          <div style={{ maxHeight: 230, overflowY: 'auto', borderTop: '1px solid var(--border)', padding: '10px 14px', flexShrink: 0, background: 'var(--card)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>SUGGESTED ({selectedSuggestions.size} selected)</div>
               <button className="btn btn-primary btn-sm" onClick={addSelected} disabled={selectedSuggestions.size === 0}>Add {selectedSuggestions.size}</button>
