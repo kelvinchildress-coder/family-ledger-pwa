@@ -179,10 +179,10 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
       <div style={{ background: 'var(--surface)', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480, height: '85vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 17 }}>â¨ AI Task Suggestions</h2>
+            <h2 style={{ margin: 0, fontSize: 17 }}>✨ AI Task Suggestions</h2>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Describe what you need help with</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>â</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {messages.map((m, i) => (
@@ -210,14 +210,14 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
               return (
                 <div key={i} onClick={() => toggleSuggestion(i)} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 10px', borderRadius: 8, background: selectedSuggestions.has(i) ? 'rgba(99,102,241,0.12)' : 'transparent', border: '1px solid ' + (selectedSuggestions.has(i) ? 'var(--primary)' : 'var(--border)'), marginBottom: 6, cursor: 'pointer' }}>
                   <div style={{ width: 18, height: 18, borderRadius: 4, border: '2px solid ' + (selectedSuggestions.has(i) ? 'var(--primary)' : 'var(--text-muted)'), background: selectedSuggestions.has(i) ? 'var(--primary)' : 'transparent', flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 11 }}>
-                    {selectedSuggestions.has(i) ? 'â' : ''}
+                    {selectedSuggestions.has(i) ? '✓' : ''}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{s.title}</div>
                     {s.details && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{s.details}</div>}
                     <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                       {s.priority && <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: pc.bg, color: pc.fg }}>{s.priority}</span>}
-                      {s.frequency && s.frequency !== 'Once' && <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: 'rgba(99,102,241,0.15)', color: 'var(--primary)' }}>ð {s.frequency}</span>}
+                      {s.frequency && s.frequency !== 'Once' && <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: 'rgba(99,102,241,0.15)', color: 'var(--primary)' }}>🔁 {s.frequency}</span>}
                       {s.category && <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: 'rgba(120,120,120,0.15)', color: 'var(--text-muted)' }}>{s.category}</span>}
                     </div>
                   {adjustments[i]?.open ? (
@@ -237,7 +237,7 @@ function SuggestTasksModal({ currentUser, onClose, onAddTasks }) {
         )}
         <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0 }}>
           <textarea className="input" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Describe what you need help with..." rows={2} style={{ flex: 1, resize: 'none', fontSize: 14 }} disabled={loading} />
-          <button className="btn btn-primary" onClick={sendMessage} disabled={loading || !input.trim()} style={{ padding: '0 16px', alignSelf: 'flex-end', height: 40 }}>â¤</button>
+          <button className="btn btn-primary" onClick={sendMessage} disabled={loading || !input.trim()} style={{ padding: '0 16px', alignSelf: 'flex-end', height: 40 }}>➤</button>
         </div>
       </div>
     </div>
@@ -273,9 +273,9 @@ function AddTaskModal({ currentUser, onClose, onAdd, onOpenSuggest }) {
   };
 
   const visOpts = [
-    { key: 'public', icon: 'ð', label: 'Public', desc: 'Anyone can see & complete' },
-    { key: 'personal', icon: 'ð', label: 'Personal', desc: 'Anyone sees, only you complete' },
-    { key: 'private', icon: 'ð', label: 'Private', desc: 'Only you can see & complete' },
+    { key: 'public', icon: '🌐', label: 'Public', desc: 'Anyone can see & complete' },
+    { key: 'personal', icon: '👁', label: 'Personal', desc: 'Anyone sees, only you complete' },
+    { key: 'private', icon: '🔒', label: 'Private', desc: 'Only you can see & complete' },
   ];
 
   return (
@@ -284,8 +284,8 @@ function AddTaskModal({ currentUser, onClose, onAdd, onOpenSuggest }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ fontSize: 18, margin: 0 }}>Add Task</h2>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {onOpenSuggest && <button onClick={onOpenSuggest} className="btn btn-secondary btn-sm" style={{ fontSize: 13 }}>â¨ Suggest</button>}
-            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>â</button>
+            {onOpenSuggest && <button onClick={onOpenSuggest} className="btn btn-secondary btn-sm" style={{ fontSize: 13 }}>✨ Suggest</button>}
+            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
           </div>
         </div>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -349,7 +349,7 @@ function TaskCard({ task, currentUser, onComplete, onSnooze }) {
   const isAssignedToMe = task.assignedTo === currentUser?.name || task.assignedTo === 'All';
   const canComplete = task.visibility === 'public' || ((task.visibility === 'personal' || task.visibility === 'private') && isAssignedToMe);
   const getPriorityClass = (p) => { if (p === 'High') return 'badge-high'; if (p === 'Medium') return 'badge-medium'; return 'badge-low'; };
-  const visIcon = task.visibility === 'private' ? ' ð' : task.visibility === 'personal' ? ' ð' : '';
+  const visIcon = task.visibility === 'private' ? ' 🔒' : task.visibility === 'personal' ? ' 👁' : '';
   const nextDue = (() => { if (task.recurrenceInterval > 0 && task.lastCompleted) { const d = new Date(task.lastCompleted); d.setDate(d.getDate() + Number(task.recurrenceInterval)); return d; } if (task.deadline) return new Date(task.deadline); return null; })();
   return (
     <div className={'task-card' + (isOverdue ? ' overdue' : '')}>
@@ -359,10 +359,10 @@ function TaskCard({ task, currentUser, onComplete, onSnooze }) {
           {task.details && <div className="task-details">{task.details}</div>}
           <div className="task-meta" style={{ marginTop: 8 }}>
             {task.priority && <span className={'badge ' + getPriorityClass(task.priority)}>{task.priority}</span>}
-            {task.frequency && task.frequency !== 'Once' && <span>ð {task.frequency}</span>}
+            {task.frequency && task.frequency !== 'Once' && <span>🔁 {task.frequency}</span>}
                 {nextDue && task.recurrenceInterval > 0 && <span>📅 Next: {nextDue.toLocaleDateString()}</span>}
-            {task.deadline && <span>ð {new Date(task.deadline).toLocaleDateString()}</span>}
-            {task.assignedTo && <span>ð¤ {task.assignedTo}</span>}
+            {task.deadline && <span>📅 {new Date(task.deadline).toLocaleDateString()}</span>}
+            {task.assignedTo && <span>👤 {task.assignedTo}</span>}
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
@@ -370,7 +370,7 @@ function TaskCard({ task, currentUser, onComplete, onSnooze }) {
           <button className="btn btn-secondary btn-sm" onClick={() => onSnooze(task.id, 24)}>Snooze</button>
         </div>
       </div>
-      {isOverdue && <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 6 }}>â  Overdue</div>}
+      {isOverdue && <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 6 }}>⚠ Overdue</div>}
     </div>
   );
 }
@@ -430,9 +430,9 @@ function CalendarTab({ currentUser }) {
         <button className="btn btn-secondary btn-sm" onClick={openGoogleCalendar}>Open Calendar</button>
       </div>
       {loading ? (<div className="sync-indicator" style={{ padding: 24, justifyContent: 'center' }}><div className="spinner"/><span>Loading calendar...</span></div>)
-      : error ? (<div className="empty-state"><div className="icon">ð</div><h3>Calendar not connected</h3><button className="btn btn-secondary" onClick={openGoogleCalendar}>Open Google Calendar</button></div>)
-      : events.length === 0 ? (<div className="empty-state"><div className="icon">ð</div><h3>Nothing scheduled today!</h3><p>Enjoy your free day</p></div>)
-      : (<div>{events.map((ev, i) => (<div key={i} className="task-card"><div className="task-title">{ev.summary}</div><div className="task-meta">{ev.start && <span>ð {new Date(ev.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}</div></div>))}</div>)}
+      : error ? (<div className="empty-state"><div className="icon">📅</div><h3>Calendar not connected</h3><button className="btn btn-secondary" onClick={openGoogleCalendar}>Open Google Calendar</button></div>)
+      : events.length === 0 ? (<div className="empty-state"><div className="icon">🎉</div><h3>Nothing scheduled today!</h3><p>Enjoy your free day</p></div>)
+      : (<div>{events.map((ev, i) => (<div key={i} className="task-card"><div className="task-title">{ev.summary}</div><div className="task-meta">{ev.start && <span>🕐 {new Date(ev.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}</div></div>))}</div>)}
     </div>
   );
 }
@@ -478,7 +478,7 @@ function DetailsTab() {
         </div>
       )}
       {tabs.length === 0 ? (
-        <div className="empty-state"><div className="icon">ð</div><h3>No details yet</h3><p>Add a tab to get started</p></div>
+        <div className="empty-state"><div className="icon">📋</div><h3>No details yet</h3><p>Add a tab to get started</p></div>
       ) : (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 16, gap: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -515,7 +515,7 @@ function SettingsTab({ currentUser, onLogout }) {
         <div className="task-title" style={{ marginBottom: 4 }}>Push Notifications</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>Get notified about task reminders</div>
         <button className={'btn btn-sm ' + (pushEnabled ? 'btn-secondary' : 'btn-primary')} onClick={handlePushToggle}>
-          {pushEnabled ? 'ð Enabled â Tap to disable' : 'ð Enable Notifications'}
+          {pushEnabled ? '🔔 Enabled â Tap to disable' : '🔕 Enable Notifications'}
         </button>
       </div>
       <div className="task-card">
@@ -612,10 +612,10 @@ export default function App() {
   if (!identity) return <IdentityPicker onPick={(u) => { setIdentity(u); setIdentityState(u); }} />;
 
   const tabs = [
-    { id: 'tasks', label: 'Tasks', icon: 'â' },
-    { id: 'calendar', label: 'Today', icon: 'ð' },
-    { id: 'details', label: 'Details', icon: 'ð' },
-    { id: 'settings', label: 'Settings', icon: 'âï¸' }
+    { id: 'tasks', label: 'Tasks', icon: '✅' },
+    { id: 'calendar', label: 'Today', icon: '📅' },
+    { id: 'details', label: 'Details', icon: '📋' },
+    { id: 'settings', label: 'Settings', icon: '⚙️' }
   ];
 
   return (
