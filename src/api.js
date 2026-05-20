@@ -15,6 +15,10 @@ export async function getTasks() {
     return apiFetch('getTasks');
 }
 
+export async function getRecentlyCompleted() {
+    return apiFetch('getRecentlyCompleted');
+}
+
 export async function updateTask(taskId, updates) {
     return apiFetch('updateTask', { taskId, updates });
 }
@@ -36,7 +40,6 @@ export async function savePushSubscription(userId, subscription) {
     return apiFetch('savePushSubscription', { userId, subscription });
 }
 
-
 export async function addTask(task) {
         return apiFetch('addTask', { ...task, createdAt: new Date().toISOString() });
 }
@@ -45,6 +48,6 @@ export async function getDetails() {
         return apiFetch('getDetails');
 }
 
-                                             export async function saveDetails(details) {
-                                                     return apiFetch('saveDetails', { details });
+export async function saveDetails(details) {
+        return apiFetch('saveDetails', { details });
 }
