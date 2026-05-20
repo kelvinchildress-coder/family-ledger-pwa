@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { checkAuth, login, logout, getIdentity, setIdentity, getAvailableUsers } from './auth';
 import { requestPushPermission, isPushEnabled, sendPushSubscriptionToServer, showLocalNotification } from './push';
-import { getTasks, updateTask, completeTask, snoozeTask, getCalendarEvents, savePushSubscription, addTask, getDetails, saveDetails } from './api';
+import { getTasks, updateTask, completeTask, snoozeTask, getCalendarEvents, savePushSubscription, addTask, getDetails, saveDetails, getRecentlyCompleted } from './api';
 import { getCachedTasks, setCachedTasks, addToSyncQueue, getSyncQueue, clearSyncQueue, getPref, setPref } from './storage';
 
 
@@ -320,17 +320,28 @@ function TaskCard({ task, currentUser, onComplete, onSnooze }) {
 }
 
 // ââ Tasks Tab âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-function TasksTab({ tasks, currentUser, onComplete, onSnooze, syncing }) {
+function TasksTab({ tasks, currentUser, onComplete, onSnooze, syncing, recentlyCompleted }) {
   const [filter, setFilter] = useState('mine');
+  const [showCompleted, setShowCompleted] = useState(false);
+
+  // Backend already filters to tasks due within 7 days or no deadline, and sorts by deadline+priority.
+  // Frontend just filters by assignment/visibility.
   const filteredTasks = tasks.filter(t => {
     // Always hide private tasks not assigned to current user
     if (t.visibility === 'private' && t.assignedTo !== currentUser?.name) return false;
     if (filter === 'mine') return t.assignedTo === currentUser?.name || t.assignedTo === 'All';
     if (filter === 'created') return t.createdBy === currentUser?.name;
-    if (filter === 'overdue') return t.deadline && new Date(t.deadline) < new Date() && !t.lastCompleted;
+    if (filter === 'overdue') return t.deadline && new Date(t.deadline) < new Date();
     return true; // 'all' - private already filtered above
   });
   const filterLabels = { mine: 'My Tasks', all: 'All Tasks', created: 'Created by Me', overdue: 'Overdue' };
+
+  // Recently completed tasks visible to this user
+  const myRecentlyCompleted = (recentlyCompleted || []).filter(t => {
+    if (filter === 'mine') return t.assignedTo === currentUser?.name || t.assignedTo === 'All';
+    return true;
+  });
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, padding: '12px 16px', overflowX: 'auto' }}>
@@ -342,8 +353,29 @@ function TasksTab({ tasks, currentUser, onComplete, onSnooze, syncing }) {
       </div>
       {syncing && <div className="sync-indicator"><div className="spinner"/><span>Syncing...</span></div>}
       {filteredTasks.length === 0 ? (
-        <div className="empty-state"><div className="icon">✅</div><h3>All caught up!</h3><p>No tasks here right now</p></div>
+        <div className="empty-state"><div className="icon">\u2705</div><h3>All caught up!</h3><p>No tasks due in the next 7 days</p></div>
       ) : filteredTasks.map(t => <TaskCard key={t.id} task={t} currentUser={currentUser} onComplete={onComplete} onSnooze={onSnooze} />)}
+      {myRecentlyCompleted.length > 0 && (
+        <div style={{ margin: '16px 16px 8px' }}>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowCompleted(p => !p)}
+            style={{ width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: 13 }}
+          >
+            {showCompleted ? '\u25be' : '\u25b8'} Recently Completed ({myRecentlyCompleted.length})
+          </button>
+          {showCompleted && myRecentlyCompleted.map(t => (
+            <div key={t.id} className="task-card" style={{ opacity: 0.65, borderLeft: '3px solid var(--success, #4caf50)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div className="task-title" style={{ textDecoration: 'line-through' }}>\u2705 {t.title}</div>
+                  {t.completedAt && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Completed {new Date(t.completedAt).toLocaleDateString()}{t.completedBy ? ' by ' + t.completedBy : ''}</div>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -494,6 +526,7 @@ export default function App() {
   const [authed, setAuthed] = useState(() => checkAuth());
   const [identity, setIdentityState] = useState(() => getIdentity());
   const [tasks, setTasks] = useState(() => getCachedTasks());
+  const [recentlyCompleted, setRecentlyCompleted] = useState([]);
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [activeTab, setActiveTab] = useState('tasks');
@@ -519,6 +552,7 @@ export default function App() {
       }
       const data = await getTasks();
       if (data.tasks) { setTasks(data.tasks); setCachedTasks(data.tasks); setLastSync(new Date()); }
+      try { const rcData = await getRecentlyCompleted(); if (rcData.tasks) setRecentlyCompleted(rcData.tasks); } catch(e) {}
     } catch (e) { console.warn('Sync failed, using cached data:', e); }
     setSyncing(false);
   }, [syncing]);
@@ -537,8 +571,10 @@ export default function App() {
 
   const handleComplete = async (taskId) => {
     const userId = identity?.name || 'unknown';
+    // Immediately remove from visible tasks (optimistic update)
+    setTasks(prev => { const next = prev.filter(t => t.id !== taskId); setCachedTasks(next); return next; });
     try { await completeTask(taskId, userId); await showLocalNotification('Task Complete!', 'Great job!'); syncTasks(); }
-    catch (e) { addToSyncQueue({ type: 'complete', taskId, userId }); }
+    catch (e) { addToSyncQueue({ type: 'complete', taskId, userId }); syncTasks(); }
   };
 
   const handleSnooze = async (taskId, hours) => {
@@ -599,7 +635,7 @@ export default function App() {
         </div>
       </header>
       <div className="content">
-        {activeTab === 'tasks' && <TasksTab tasks={tasks} currentUser={identity} onComplete={handleComplete} onSnooze={handleSnooze} syncing={syncing} />}
+        {activeTab === 'tasks' && <TasksTab tasks={tasks} currentUser={identity} onComplete={handleComplete} onSnooze={handleSnooze} syncing={syncing} recentlyCompleted={recentlyCompleted} />}
         {activeTab === 'calendar' && <CalendarTab currentUser={identity} />}
         {activeTab === 'details' && <DetailsTab />}
         {activeTab === 'settings' && <SettingsTab currentUser={identity} onLogout={handleLogout} />}
