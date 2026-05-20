@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { checkAuth, login, logout, getIdentity, setIdentity, getAvailableUsers } from './auth';
 import { requestPushPermission, isPushEnabled, sendPushSubscriptionToServer, showLocalNotification } from './push';
-import { getTasks, updateTask, completeTask, snoozeTask, getCalendarEvents, savePushSubscription, addTask } from './api';
+import { getTasks, updateTask, completeTask, snoozeTask, getCalendarEvents, savePushSubscription, addTask, getDetails, saveDetails } from './api';
 import { getCachedTasks, setCachedTasks, addToSyncQueue, getSyncQueue, clearSyncQueue, getPref, setPref } from './storage';
 
 
@@ -9,6 +9,7 @@ import { getCachedTasks, setCachedTasks, addToSyncQueue, getSyncQueue, clearSync
 const USER_FLAGS = { Kelvin: 'N', Enrique: '🇲🇹', Andie: '🏐', Noa: '⚽' };
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY || '';
+const BASE = import.meta.env.VITE_BACKEND_URL || '';
 
 async function callGemini(messages) {
   // Route through Apps Script backend to avoid exposing API key and browser quota limits
@@ -382,36 +383,55 @@ function CalendarTab({ currentUser }) {
 
 // ââ Details Tab âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const DETAILS_KEY = 'fl_details_v2';
-function loadDetails() { try { return JSON.parse(localStorage.getItem(DETAILS_KEY) || '[]'); } catch { return []; } }
+function loadDetailsLocal() { try { return JSON.parse(localStorage.getItem(DETAILS_KEY) || '[]'); } catch { return []; } }
 function saveDetailsLocal(tabs) { localStorage.setItem(DETAILS_KEY, JSON.stringify(tabs)); }
 
 function DetailsTab() {
-  const [tabs, setTabs] = useState(() => loadDetails());
-  const [activeTab, setActiveTab] = useState(0);
-  const [editing, setEditing] = useState(false);
-  const [newTabName, setNewTabName] = useState('');
-  const [addingTab, setAddingTab] = useState(false);
+  const [tabs, setTabs] = React.useState(() => loadDetailsLocal());
+  const [activeTab, setActiveTab] = React.useState(0);
+  const [editing, setEditing] = React.useState(false);
+  const [newTabName, setNewTabName] = React.useState('');
+  const [addingTab, setAddingTab] = React.useState(false);
+  const [syncing, setSyncing] = React.useState(false);
+
+  // Load from backend on mount, fall back to localStorage
+  React.useEffect(() => {
+    getDetails().then(data => {
+      if (data && data.details && Array.isArray(data.details) && data.details.length > 0) {
+        setTabs(data.details);
+        saveDetailsLocal(data.details);
+      }
+    }).catch(() => { /* use localStorage fallback */ });
+  }, []);
+
+  const persistTabs = (next) => {
+    setTabs(next);
+    saveDetailsLocal(next);
+    setSyncing(true);
+    saveDetails(next).catch(() => {}).finally(() => setSyncing(false));
+  };
 
   const updateContent = (content) => {
     const next = tabs.map((t, i) => i === activeTab ? { ...t, content } : t);
-    setTabs(next); saveDetailsLocal(next);
+    persistTabs(next);
   };
   const addTab = () => {
     if (!newTabName.trim()) return;
     const next = [...tabs, { name: newTabName.trim(), content: '' }];
-    setTabs(next); saveDetailsLocal(next); setActiveTab(next.length - 1); setNewTabName(''); setAddingTab(false);
+    persistTabs(next); setActiveTab(next.length - 1); setNewTabName(''); setAddingTab(false);
   };
   const removeTab = (i) => {
     const next = tabs.filter((_, idx) => idx !== i);
-    setTabs(next); saveDetailsLocal(next); setActiveTab(Math.min(activeTab, next.length - 1));
+    persistTabs(next); setActiveTab(Math.min(activeTab, next.length - 1));
   };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ display: 'flex', gap: 4, padding: '8px 16px', overflowX: 'auto', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 4, padding: '8px 16px', overflowX: 'auto', borderBottom: '1px solid var(--border)', flexShrink: 0, alignItems: 'center' }}>
         {tabs.map((t, i) => (
           <button key={i} className={'btn btn-sm ' + (i === activeTab ? 'btn-primary' : 'btn-secondary')} onClick={() => setActiveTab(i)} style={{ whiteSpace: 'nowrap' }}>{t.name}</button>
         ))}
         <button className="btn btn-sm btn-secondary" onClick={() => setAddingTab(true)}>+ Tab</button>
+        {syncing && <div className="spinner" style={{ marginLeft: 4 }} />}
       </div>
       {addingTab && (
         <div style={{ padding: '8px 16px', display: 'flex', gap: 8 }}>
@@ -444,7 +464,6 @@ function DetailsTab() {
   );
 }
 
-// ââ Settings Tab ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function SettingsTab({ currentUser, onLogout }) {
   const [pushEnabled, setPushEnabled] = useState(isPushEnabled());
   const handlePushToggle = async () => {
